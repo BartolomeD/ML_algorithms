@@ -21,26 +21,20 @@ from sklearn.model_selection import KFold
 
 def StackEnsemble(models, x_train, y_train, x_test, n_folds=5, prob=True, orig_data=True, verbose=True):
     
-    def _join(x, preds):
-        if not orig_data: 
-            x = np.array([]).reshape(len(x), 0)
+    def _join(x, preds): 
+        x = x if orig_data else np.array([]).reshape(len(x), 0) 
         for pred in preds.values():
-            if prob:
-                x = np.concatenate([x, np.array(pred).reshape(-1, len(set(y_train)))], axis=1)
-            else:
-                x = np.concatenate([x, np.array(pred).reshape(-1, 1)], axis=1)
+            x = np.concatenate([x, np.array(pred).reshape(-1, len(set(y_train)) if prob else 1)], axis=1)
         return x
     
     def _predict(x):
-        if prob:
-            return model.predict_proba(x)
-        return model.predict(x)
+        return model.predict_proba(x) if prob else model.predict(x)
 
     kf = KFold(n_splits = n_folds)
     preds_train = OrderedDict()
     preds_test = OrderedDict()
 
-    for name, model in [(str(type(model)).split('.')[-1][:-2], model) for model in models]:
+    for name, model in [(str(type(m)).split('.')[-1][:-2], m) for m in models]:
         if verbose: print('Getting predictions from {}..'.format(name))
 
         preds_train[name] = []
